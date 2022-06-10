@@ -15,7 +15,7 @@ contract BankExercice is Ownable {
     mapping(uint => uint) public history;
 
     constructor() {
-        admin = msg.sender;
+        
     }
 
     modifier onlyAdmin() {
