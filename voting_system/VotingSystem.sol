@@ -8,6 +8,8 @@ import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contr
     Chaque électeur peux voir le code des autres
     Le gagnant est déterminé à la majorité
     La proposition qui obtient le plus de voix l'emporte
+
+    Ne pas pouvoir rajouter un voter déjà inscrit
 */
 
 contract Voting is Ownable {
@@ -38,16 +40,12 @@ contract Voting is Ownable {
 
     Proposal[] public proposalList;
 
-    mapping(address => Voter) voters; 
+    mapping(address => Voter) public voters; 
 
     event VoterRegistered(address voterAddress); 
     event WorkflowStatusChange(WorkflowStatus previousStatus, WorkflowStatus newStatus);
     event ProposalRegistered(uint proposalId);
     event Voted (address voter, uint proposalId);
-
-    constructor() {
-        admin = msg.sender;
-    }
 
     function changeWorkflowStatus(WorkflowStatus _status) internal onlyOwner {
         session = _status;
@@ -55,13 +53,13 @@ contract Voting is Ownable {
 
     /*  
         L'administrateur du vote enregistre une liste blanche d'électeurs 
-        identifiés par leur adresse Ethereum.
+        identifiés par leur adresse Ethereum
     */
     function addingVotersToWhitelist(address _address) external onlyOwner {
         voters[_address] = Voter(true, false, 0);
     }
 
-    // L'administrateur du vote peut commencer une session d'enregistrement de la proposition.
+    // L'administrateur du vote peut commencer une session d'enregistrement de la proposition
     function startPropositionSession() public onlyOwner {
         emit WorkflowStatusChange(session, WorkflowStatus.ProposalsRegistrationStarted);
         session = WorkflowStatus.ProposalsRegistrationStarted;
@@ -76,13 +74,12 @@ contract Voting is Ownable {
     /*  
         Les électeurs inscrits sont autorisés à enregistrer 
         leurs propositions pendant que la session d'enregistrement 
-        est active.
+        est active
     */
     function addProposal(string memory _description) external {
         require(voters[msg.sender].isRegistered, "You are not registered");
         require(session == WorkflowStatus.ProposalsRegistrationStarted, "The session has not started yet");
         proposalList.push(Proposal(_description, 0));
-        voters[msg.sender].hasVoted = true;
     }
 
     // Mettre fin à une session, proposition et vote
@@ -103,11 +100,11 @@ contract Voting is Ownable {
         }
     }
 
-    // Les électeurs inscrits votent pour leur proposition préférée.
+    // Les électeurs inscrits votent pour leur proposition préférée, inscrit et n'a pas voté
     function voteForProposition(uint _proposalId) public {
-        // Doit être inscrit et n'a pas encore voté
-        require(voters[msg.sender].isRegistered && !voters[msg.sender].hasVoted, "You are not registered");
         require(session == WorkflowStatus.VotingSessionStarted, "The voting session has not started yet");
+        require(voters[msg.sender].isRegistered, "You are not registered");
+        require(!voters[msg.sender].hasVoted, "You have already voted");
         proposalList[_proposalId].voteCount++;
         voters[msg.sender].hasVoted = true;
     }
