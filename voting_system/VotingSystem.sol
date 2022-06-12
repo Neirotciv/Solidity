@@ -14,7 +14,8 @@ import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contr
 
 contract Voting is Ownable {
     address admin;
-    uint winningProposalId;
+    uint public winningProposalId;
+    bool public equalVotes;
     
     struct Voter {
         bool isRegistered;
@@ -56,6 +57,7 @@ contract Voting is Ownable {
         identifiés par leur adresse Ethereum
     */
     function addingVotersToWhitelist(address _address) external onlyOwner {
+        require(!voters[_address].isRegistered, "Voter already in the whitelist");
         voters[_address] = Voter(true, false, 0);
     }
 
@@ -67,6 +69,7 @@ contract Voting is Ownable {
 
     // L'administrateur du vote commence la session de vote
     function startVotingSession() public onlyOwner {
+        require(proposalList.length > 0, "Unable to vote, 0 proposals");
         emit WorkflowStatusChange(session, WorkflowStatus.VotingSessionStarted);
         session = WorkflowStatus.VotingSessionStarted;
     }
@@ -80,9 +83,10 @@ contract Voting is Ownable {
         require(voters[msg.sender].isRegistered, "You are not registered");
         require(session == WorkflowStatus.ProposalsRegistrationStarted, "The session has not started yet");
         proposalList.push(Proposal(_description, 0));
+        emit ProposalRegistered(proposalList.length - 1);
     }
 
-    // Mettre fin à une session, proposition et vote
+    // Mettre fin à une session, proposition ou vote
     function endCurrentSession() external onlyOwner {
         require(
             session == WorkflowStatus.ProposalsRegistrationStarted ||
@@ -106,11 +110,26 @@ contract Voting is Ownable {
         require(voters[msg.sender].isRegistered, "You are not registered");
         require(!voters[msg.sender].hasVoted, "You have already voted");
         proposalList[_proposalId].voteCount++;
+
         voters[msg.sender].hasVoted = true;
+        voters[msg.sender].voteProposalId = _proposalId;
+
+        emit Voted (msg.sender, _proposalId);
+    }
+
+    // Controler si deux votes identiques
+    function checkEqualVotes(uint _maxCount, uint _id) public view returns (bool) {
+        for (uint i; i < proposalList.length; i++) {
+            if (_maxCount == proposalList[i].voteCount && _id != i) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // Comptabiliser les votes
     function countTheVotes() public onlyOwner {
+        require(session == WorkflowStatus.VotingSessionStarted, "The voting session has not started yet");
         uint id;
         uint count;
         // Parcourir la liste des propositions
@@ -120,14 +139,17 @@ contract Voting is Ownable {
                 id = i;
             }
         }
-        winningProposalId = id;
+
+        if (checkEqualVotes(count, id)) {
+            equalVotes = true;
+        } else {
+            winningProposalId = id;
+        }
     }
 
-    function getAllProposals() public view returns (Proposal[] memory) {
-        return proposalList;
-    }
-
+    // Tout le monde peut vérifier les derniers détails de la proposition gagnante.
     function getWinningProposal() public view  returns (Proposal memory) {
+        require(session == WorkflowStatus.VotesTallied, "The voting session is not over");
         return proposalList[winningProposalId];
     }
 }
