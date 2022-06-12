@@ -48,10 +48,6 @@ contract Voting is Ownable {
     event ProposalRegistered(uint proposalId);
     event Voted (address voter, uint proposalId);
 
-    function changeWorkflowStatus(WorkflowStatus _status) internal onlyOwner {
-        session = _status;
-    }
-
     /*  
         L'administrateur du vote enregistre une liste blanche d'électeurs 
         identifiés par leur adresse Ethereum
