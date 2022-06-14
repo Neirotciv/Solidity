@@ -130,7 +130,7 @@ contract Voting is Ownable {
 
     // Comptabiliser les votes
     function countTheVotes() public onlyOwner {
-        require(session == WorkflowStatus.VotingSessionStarted, "The voting session has not started yet");
+        require(session == WorkflowStatus.VotingSessionEnded, "The voting session is not over");
         uint id;
         uint count;
         // Parcourir la liste des propositions
@@ -145,6 +145,23 @@ contract Voting is Ownable {
             equalVotes = true;
         } else {
             winningProposalId = id;
+        }
+
+        session == WorkflowStatus.VotesTallied;
+        emit WorkflowStatusChange(WorkflowStatus.VotingSessionEnded, WorkflowStatus.VotesTallied);
+    }
+
+    // Proposer un nouveau vote entre votes ex aequo
+    function newVotingFromEquals() external onlyOwner {
+        require(equalVotes, "No equals vote");
+        Proposal[] memory proposalListCopy = proposalList;
+        delete proposalList;
+        uint winningCount = proposalList[winningProposalId].voteCount;
+        
+        for (uint i; i < proposalListCopy.length; i++) {
+            if (proposalListCopy[i].voteCount == winningCount) {
+                proposalList.push(proposalListCopy[i]);
+            }
         }
     }
 
