@@ -8,7 +8,7 @@ import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contr
     Chaque électeur peux voir le code des autres
     Le gagnant est déterminé à la majorité
     La proposition qui obtient le plus de voix l'emporte
-
+0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2
     Ne pas pouvoir rajouter un voter déjà inscrit
 */
 
@@ -147,8 +147,8 @@ contract Voting is Ownable {
             winningProposalId = id;
         }
 
-        session == WorkflowStatus.VotesTallied;
-        emit WorkflowStatusChange(WorkflowStatus.VotingSessionEnded, WorkflowStatus.VotesTallied);
+        session = WorkflowStatus.VotesTallied;
+        emit WorkflowStatusChange(WorkflowStatus.VotingSessionEnded, session);
     }
 
     // Proposer un nouveau vote entre votes ex aequo
