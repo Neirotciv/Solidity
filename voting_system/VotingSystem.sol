@@ -78,6 +78,11 @@ contract Voting is Ownable {
     function addProposal(string memory _description) external {
         require(voters[msg.sender].isRegistered, "You are not registered");
         require(session == WorkflowStatus.ProposalsRegistrationStarted, "The session has not started yet");
+        // Si une session de vote a déjà eu lieu, le voter est réinitialisé
+        if (voters[msg.sender].hasVoted) {
+            voters[msg.sender].hasVoted = false;
+            voters[msg.sender].voteProposalId = 0;
+        }
         proposalList.push(Proposal(_description, 0));
         emit ProposalRegistered(proposalList.length - 1);
     }
@@ -114,7 +119,7 @@ contract Voting is Ownable {
     }
 
     // Controler si deux votes identiques
-    function checkEqualVotes(uint _maxCount, uint _id) public view returns (bool) {
+    function checkEqualVotes(uint _maxCount, uint _id) internal view returns (bool) {
         for (uint i; i < proposalList.length; i++) {
             if (_maxCount == proposalList[i].voteCount && _id != i) {
                 return true;
@@ -144,7 +149,7 @@ contract Voting is Ownable {
     }
 
     // Tout le monde peut vérifier les derniers détails de la proposition gagnante.
-    function getWinningProposal() public view  returns (Proposal memory) {
+    function getWinningProposal() public view returns (Proposal memory) {
         require(session == WorkflowStatus.VotesTallied, "The voting session is not over");
         return proposalList[winningProposalId];
     }
